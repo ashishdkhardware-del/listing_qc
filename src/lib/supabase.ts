@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { Item } from "./types";
 
 // Browser client: the anon key only reaches what the database rules allow for the signed-in reviewer.
-export const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+// PKCE: Google sign-in returns a one-time ?code= instead of putting tokens in the address bar.
+export const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { flowType: "pkce" } });
 
 // Images live under <base>/<folder>/<item id>/<file>: the app's own /folders today, a Cloudflare R2 URL later.
 const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || "/folders";

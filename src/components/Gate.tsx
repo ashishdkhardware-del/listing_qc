@@ -14,7 +14,14 @@ type Me = { id: string; name: string; email: string; role: Role; signOut: () => 
 const Ctx = createContext<Me>({ id: "", name: "", email: "", role: "reviewer", signOut: () => {} });
 export const useReviewer = () => useContext(Ctx);
 
-const signIn = () => db.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.href } });
+// come back to the same page, minus any leftover #fragment or one-time ?code from an earlier sign-in
+const here = () => {
+  const u = new URL(window.location.href);
+  u.hash = "";
+  u.searchParams.delete("code");
+  return u.toString();
+};
+const signIn = () => db.auth.signInWithOAuth({ provider: "google", options: { redirectTo: here() } });
 const signOut = () => db.auth.signOut();
 
 export default function Gate({ children, admin = false }: { children: React.ReactNode; admin?: boolean }) {
@@ -23,7 +30,11 @@ export default function Gate({ children, admin = false }: { children: React.Reac
   const [name, setName] = useState("");
 
   useEffect(() => {
-    db.auth.getSession().then(({ data }) => setSession(data.session));
+    db.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      // drop the used ?code= (and any old #tokens) from the address bar once the session is in place
+      if (data.session && (location.search.includes("code=") || location.hash)) history.replaceState(null, "", here());
+    });
     const { data } = db.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
